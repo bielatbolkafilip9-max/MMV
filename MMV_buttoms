@@ -1,0 +1,35 @@
+-- ==========================================
+-- PAGE 2: QUICK ACTIONS (Reset, Rejoin, Leave)
+-- ==========================================
+local utils_tab = shared.CreateTab("Quick Actions", "/axioriasolver/testplugin/refs/heads/main/icon")
+local utils_section = utils_tab:AddSection("Game Controls", "Fast server and character buttons")
+
+-- Reset Character Button
+utils_section:AddButton("Reset Character", function()
+    pcall(function()
+        local player = game:GetService("Players").LocalPlayer
+        if player and player.Character then
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.Health = 0
+            end
+        end
+    end)
+end)
+
+-- Rejoin Server Button
+utils_section:AddButton("Rejoin Server", function()
+    pcall(function()
+        local teleportService = game:GetService("TeleportService")
+        local player = game:GetService("Players").LocalPlayer
+        teleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
+    end)
+end)
+
+-- Leave Game Button
+utils_section:AddButton("Leave Game", function()
+    pcall(function()
+        game:GetService("CoreGui"):FindFirstChild("RobloxGui"):Destroy()
+        game:Shutdown()
+    end)
+end)
