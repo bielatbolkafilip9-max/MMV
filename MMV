@@ -1,0 +1,154 @@
+local shared = odh_shared_plugins
+
+local mmv_tab = shared.CreateTab("MMV Auto Commands", "/axioriasolver/testplugin/refs/heads/main/icon")
+local mmv_section = mmv_tab:AddSection("Auto Command Sender", "Sends commands every new round")
+
+local sendDelay = 2
+
+mmv_section:AddSlider("Command Delay (seconds)", 1, 10, 2, function(val)
+    sendDelay = val
+end)
+
+-- Helper function to send chat messages
+local function sendChatCommand(cmd)
+    pcall(function()
+        local textChatService = game:GetService("TextChatService")
+        if textChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+            local channel = textChatService.TextChannels:FindFirstChild("RBXGeneral")
+            if channel then
+                channel:SendAsync(cmd)
+            end
+        else
+            local replicatedStorage = game:GetService("ReplicatedStorage")
+            local sayMessageRequest = replicatedStorage:FindFirstChild("DefaultChatSystemChatEvents") 
+                and replicatedStorage.DefaultChatSystemChatEvents:FindFirstChild("SayMessageRequest")
+            if sayMessageRequest then
+                sayMessageRequest:FireServer(cmd, "All")
+            end
+        end
+    end)
+end
+
+-- Funkcja sprawdzająca, czy runda się skończyła / jesteśmy w lobby
+local function isRoundOverOrLobby()
+    local success, result = pcall(function()
+        local player = game:GetService("Players").LocalPlayer
+        local playerGui = player and player:FindFirstChild("PlayerGui")
+        if playerGui then
+            for _, gui in ipairs(playerGui:GetDescendants()) do
+                if gui:IsA("TextLabel") or gui:IsA("TextButton") then
+                    local text = string.lower(gui.Text)
+                    if text:find("intermission") or text:find("voting") or text:find("victory") or text:find("defeat") or text:find("game over") or text:find("koniec") or text:find("remis") then
+                        return true
+                    end
+                end
+            end
+        end
+        return false
+    end)
+    return success and result
+end
+
+----------------------------------------------------
+-- 1. AUTO MAP (/map <MapName>)
+----------------------------------------------------
+local mapName = ""
+local autoMapEnabled = false
+
+-- Specjalne mapy pod update'y
+local mapList = {
+    "Milbase",
+    "IceCastle",
+    "Factory",
+    "Farm"
+}
+
+mmv_section:AddDropdown("Select Update Map", mapList, function(selected)
+    mapName = selected
+end)
+
+mmv_section:AddTextBox("OR Custom Map Name", function(text)
+    mapName = text
+end)
+
+mmv_section:AddToggle("Auto Send /map (Every Round)", function(state)
+    autoMapEnabled = state
+    if state then
+        task.spawn(function()
+            local hasSentThisRound = false
+            while autoMapEnabled do
+                if not hasSentThisRound or isRoundOverOrLobby() then
+                    if mapName ~= "" then
+                        sendChatCommand("/map " .. mapName)
+                        hasSentThisRound = true
+                    end
+                end
+                task.wait(sendDelay)
+            end
+        end)
+    end
+end)
+
+----------------------------------------------------
+-- 2. AUTO SHERIFF (/sheriff <Username>)
+----------------------------------------------------
+local sheriffName = ""
+local autoSheriffEnabled = false
+
+mmv_section:AddPlayerDropdown("Select Sheriff from List", function(player)
+    sheriffName = player.Name
+end)
+
+mmv_section:AddTextBox("OR Sheriff Username", function(text)
+    sheriffName = text
+end)
+
+mmv_section:AddToggle("Auto Send /sheriff (Every Round)", function(state)
+    autoSheriffEnabled = state
+    if state then
+        task.spawn(function()
+            local hasSentThisRound = false
+            while autoSheriffEnabled do
+                if not hasSentThisRound or isRoundOverOrLobby() then
+                    if sheriffName ~= "" then
+                        sendChatCommand("/sheriff " .. sheriffName)
+                        hasSentThisRound = true
+                    end
+                end
+                task.wait(sendDelay)
+            end
+        end)
+    end
+end)
+
+----------------------------------------------------
+-- 3. AUTO MURDERER (/murderer <Username>)
+----------------------------------------------------
+local murdererName = ""
+local autoMurdererEnabled = false
+
+mmv_section:AddPlayerDropdown("Select Murderer from List", function(player)
+    murdererName = player.Name
+end)
+
+mmv_section:AddTextBox("OR Murderer Username", function(text)
+    murdererName = text
+end)
+
+mmv_section:AddToggle("Auto Send /murderer (Every Round)", function(state)
+    autoMurdererEnabled = state
+    if state then
+        task.spawn(function()
+            local hasSentThisRound = false
+            while autoMurdererEnabled do
+                if not hasSentThisRound or isRoundOverOrLobby() then
+                    if murdererName ~= "" then
+                        sendChatCommand("/murderer " .. murdererName)
+                        hasSentThisRound = true
+                    end
+                end
+                task.wait(sendDelay)
+            end
+        end)
+    end
+end)
